@@ -2,11 +2,14 @@ from osm_object import calculate_border_angles_to_object_and_point, calculate_os
 from osm_object import One_OSM_object, Image_OSM_object
 from utils import calculate_distance
 
+import math
+import numpy as np
 
 class Circle_diagram(object):
-    def __init__(self, sectors_count, center_point=(0., 0.)):
+    def __init__(self, sectors_count, center_point, img_shape):
         self.sectors_count = sectors_count
         self.center_point = center_point
+        self.img_shape = img_shape
     
         # Количество градусов, которое помещается в каждом секторе
         self.step_grad = 360 / sectors_count
@@ -16,7 +19,7 @@ class Circle_diagram(object):
     def insert(self, osm_object):
         center_x = self.center_point[0]
         center_y = self.center_point[1]
-        angle_1, angle_2 = calculate_border_angles_to_object_and_point(center_x, center_y, osm_object)
+        angle_1, angle_2 = calculate_border_angles_to_object_and_point(center_x, center_y, osm_object, self.img_shape)
         object_x, object_y = calculate_osm_object_center(osm_object)
         
         distance = calculate_distance((center_x, center_y), (object_x, object_y))
@@ -55,7 +58,7 @@ class Circle_diagram(object):
         
         
 def create_circle_diagram(sectors_count, center_point, img_osm):
-    cd = Circle_diagram(sectors_count, center_point)
+    cd = Circle_diagram(sectors_count, center_point, img_osm.img_cutted_shape)
     
     for i in range(len(img_osm.osm_objects)):
         osm_object = img_osm.osm_objects[i]
@@ -72,6 +75,7 @@ def calculate_angle_by_blocks_count(t):
     
     Возвращает угол сектора круговой диаграммы В ГРАДУСАХ
     """
+    t_sq_d = 1 / (t ** 2)
     numerator = 2 * t_sq_d / 4 + t_sq_d * (t - 3 / 2) ** 2 - t_sq_d + (1 - 1 / (2 * t)) ** 2
     denominator = 1 / t * math.sqrt(1 + 4 * (t - 3 / 2) ** 2) * math.sqrt(t_sq_d / 4 + (1 - 1 / (2 * t)) ** 2)
     return math.degrees(math.acos(numerator / denominator))
@@ -111,19 +115,22 @@ def calculate_blocks_centers(img_osm_shape, bigger_size_blocks_count):
     return center_points
 
 
+def calculate_sectors_count(bigger_side_blocks_count):
+    sector_angle = calculate_angle_by_blocks_count(bigger_side_blocks_count)
+    # Округляем вверх, чтобы наверняка гарантировать точность
+    return math.ceil(360. / sector_angle)
+
+
 class Image_circle_diagrams(object):
-    def __init__(self, img_osm, bigger_size_blocks_count):
+    def __init__(self, img_osm, bigger_side_blocks_count, sectors_count):
         """
         img_osm - структура объектов на изображении (см utils)
         bigger_size_blocks_count - количество элементов сетки на большей стороне изображения
         """
-        self.sector_angle = calculate_angle_by_blocks_count(bigger_size_blocks_count)
-        # Округляем вверх, чтобы наверняка гарантировать точность
-        self.sectors_count = math.ceil(360. / self.sector_angle)
-        print(self.sectors_count)
+        self.sectors_count = sectors_count
         
         # Дальше нужно понять, сколько будет блоков всего на изображении, и где будут находиться центры этих блоков (сетки)
-        self.center_points = calculate_blocks_centers(img_osm.img_cutted_shape, bigger_size_blocks_count)
+        self.center_points = calculate_blocks_centers(img_osm.img_cutted_shape, bigger_side_blocks_count)
         
         # Теперь для каждой из центральных точек нужно построить круговую диаграмму
         self.circle_diagrams = []
@@ -238,4 +245,16 @@ def select_minimum_penalty_element_grid(img_cds, agent_cd):
         center_points.append(center_point)
     
     minimum_penalty_index = np.argmin(penalties)
-    return center_points[minimum_penalty_index], minimum_penalty_index
+    
+    minimum_penalty = penalties[minimum_penalty_index]
+    # Вернём список из всех центров элементов сетки, которым соответствует минимальный штраф
+    
+    center_points_minimum_penalty = []
+    indices_minimum_penalty = []
+    
+    for i in range(len(penalties)):
+        if penalties[i] == minimum_penalty:
+            center_points_minimum_penalty.append(center_points[i])
+            indices_minimum_penalty.append(i)
+    
+    return center_points_minimum_penalty, indices_minimum_penalty

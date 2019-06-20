@@ -78,7 +78,7 @@ class Image_OSM_object(object):
         return None
     
     
-def calculate_border_angles_to_object_and_point(x, y, osm_object):
+def calculate_border_angles_to_object_and_point(x, y, osm_object, img_shape):
     """
     Функция, вычисляющая для одного osm-объекта два угла, между которыми можно видеть объект, находясь в точке (x, y)
     """
@@ -112,7 +112,7 @@ def calculate_border_angles_to_object_and_point(x, y, osm_object):
     vector_2 = vectors[vector_pair[1]]
 
     # Определяем угол между каждым из векторов и осью абсцисс, начинающейся в точке (x, y)
-    abscissa = (0, img_cutted_satellite.shape[1] - y)   #!!!! Вот это, скорее всего работать не будет
+    abscissa = (0, img_shape[1] - y)
     
     angle_1 = calculate_directed_angle(abscissa, vector_1)
     angle_2 = calculate_directed_angle(abscissa, vector_2)

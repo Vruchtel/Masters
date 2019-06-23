@@ -31,6 +31,10 @@ def calculate_angle(vector_1, vector_2):
     scalar_product = np.dot(vector_1, vector_2)
     norm_1 = np.linalg.norm(vector_1)
     norm_2 = np.linalg.norm(vector_2) 
+    
+    if norm_1 == 0 or norm_2 == 0:
+        return 0
+    
     return np.rad2deg(np.arccos(scalar_product / (norm_1 * norm_2)))
 
 
@@ -40,7 +44,7 @@ def calculate_directed_angle(vector_1, vector_2):
     
     pseudoscalar_product = vector_1[0] * vector_2[1] - vector_1[1] * vector_2[0]
     norm_1 = np.linalg.norm(vector_1)
-    norm_2 = np.linalg.norm(vector_2) 
+    norm_2 = np.linalg.norm(vector_2)
     dir_angle = np.rad2deg(np.arcsin(pseudoscalar_product / (norm_1 * norm_2)))
     
     if dir_angle < 0:

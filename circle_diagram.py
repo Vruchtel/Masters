@@ -19,15 +19,21 @@ class Circle_diagram(object):
     def insert(self, osm_object):
         center_x = self.center_point[0]
         center_y = self.center_point[1]
+        
         angle_1, angle_2 = calculate_border_angles_to_object_and_point(center_x, center_y, osm_object, self.img_shape)
+        
+### почему???
+#         angle_1, angle_2 = calculate_border_angles_to_object_and_point(center_y, center_x, osm_object, self.img_shape)
         object_x, object_y = calculate_osm_object_center(osm_object)
         
         distance = calculate_distance((center_x, center_y), (object_x, object_y))
+### почему???
+#         distance = calculate_distance((center_x, center_y), (object_y, object_x))
         
         diff_between_angles = abs(angle_2 - angle_1)
-        if diff_between_angles < 180: # Перехода через 0 нет
-            start_angle = min(angle_1, angle_2)
-            end_angle = max(angle_1, angle_2)
+        # Перехода через 0 нет
+        start_angle = min(angle_1, angle_2)
+        end_angle = max(angle_1, angle_2)
             
         if diff_between_angles >= 180: # Есть переход через 0
             start_angle = max(angle_1, angle_2)
@@ -96,8 +102,12 @@ def calculate_blocks_centers(img_osm_shape, bigger_size_blocks_count):
     assert(one_element_len % 1 == 0)
     one_element_len = int(one_element_len)
     
+    assert((height / one_element_len) % 1 == 0)
+    assert((width / one_element_len) % 1 == 0)
+    
     blocks_count_height = int(height / one_element_len)
     blocks_count_width = int(width / one_element_len)
+    
     
     height_dots = []
     width_dots = []
@@ -107,9 +117,15 @@ def calculate_blocks_centers(img_osm_shape, bigger_size_blocks_count):
     for i in range(blocks_count_width):
         width_dots.append(i * one_element_len + one_element_len / 2)
     
+#     # Этот блок кода отвечает за перекрывающиеся элементы сетки
+#     for i in range(1, blocks_count_height):
+#         height_dots.append(one_element_len * i)
+#     for i in range(1, blocks_count_width):
+#         width_dots.append(one_element_len * i)
+    
     center_points = []
-    for i in range(blocks_count_height):
-        for j in range(blocks_count_width):
+    for i in range(len(height_dots)):
+        for j in range(len(width_dots)):
             center_points.append((height_dots[i], width_dots[j]))
             
     return center_points
@@ -200,7 +216,7 @@ def calculate_penalty_for_sectors(sector_img_diagram, sector_agent_diagram):
             indicator = 1
         penalty += (indicator / (i + 1) ** 2)
     
-    more_sector_len = max(len(sector_img_diagram[min_length:]), len(sector_agent_diagram[min_length:]))
+    more_sector_len = max(len(sector_img_diagram), len(sector_agent_diagram)) - min_length
     for i in range(min_length, min_length + more_sector_len):
         penalty += (1 / (i + 1) ** 2)
         
@@ -244,9 +260,7 @@ def select_minimum_penalty_element_grid(img_cds, agent_cd):
         penalties.append(min(cur_cd_penalties))
         center_points.append(center_point)
     
-    minimum_penalty_index = np.argmin(penalties)
-    
-    minimum_penalty = penalties[minimum_penalty_index]
+    minimum_penalty = min(penalties)
     # Вернём список из всех центров элементов сетки, которым соответствует минимальный штраф
     
     center_points_minimum_penalty = []

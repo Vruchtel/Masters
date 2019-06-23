@@ -81,7 +81,7 @@ class Image_OSM_object(object):
 def calculate_border_angles_to_object_and_point(x, y, osm_object, img_shape):
     """
     Функция, вычисляющая для одного osm-объекта два угла, между которыми можно видеть объект, находясь в точке (x, y)
-    """
+    """    
     minlat = osm_object.minlat
     maxlat = osm_object.maxlat
     minlon = osm_object.minlon

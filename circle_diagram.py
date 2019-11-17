@@ -5,6 +5,9 @@ from utils import calculate_distance
 import math
 import numpy as np
 
+# fast diagram
+from diagram import Diagram
+
 class Circle_diagram(object):
     def __init__(self, sectors_count, center_point, img_shape):
         self.sectors_count = sectors_count
@@ -60,7 +63,14 @@ class Circle_diagram(object):
         """
         'Поворачивает' диаграмму на 1 сектор
         """
-        self.sectors = [self.sectors[-1]] + self.sectors[:-1]
+        self.sectors = [self.sectors[-1]] + self.sectors[:-1]        
+                    
+            
+    def make_fast(self):
+        """
+        Быстрая версия секторов, написанная на cython
+        """
+        self.fast_diagram = Diagram(self.sectors)
         
         
 def create_circle_diagram(sectors_count, center_point, img_osm):
@@ -138,7 +148,7 @@ def calculate_sectors_count(bigger_side_blocks_count):
 
 
 class Image_circle_diagrams(object):
-    def __init__(self, img_osm, bigger_side_blocks_count, sectors_count):
+    def __init__(self, img_osm, bigger_side_blocks_count, sectors_count, with_fast=True):
         """
         img_osm - структура объектов на изображении (см utils)
         bigger_size_blocks_count - количество элементов сетки на большей стороне изображения
@@ -150,8 +160,15 @@ class Image_circle_diagrams(object):
         
         # Теперь для каждой из центральных точек нужно построить круговую диаграмму
         self.circle_diagrams = []
+        if with_fast:
+            self.fast_diagrams = []
+            
         for center_p in self.center_points:
-            self.circle_diagrams.append(create_circle_diagram(self.sectors_count, center_p, img_osm))
+            circle_diagram = create_circle_diagram(self.sectors_count, center_p, img_osm)
+            self.circle_diagrams.append(circle_diagram)
+            
+            if with_fast:
+                self.fast_diagrams.append(Diagram(circle_diagram.sectors))
         
         
 class Agent_circle_diagram(Circle_diagram):
@@ -240,24 +257,29 @@ def calculate_penalty_for_diagrams(img_sectors, agent_sectors):
     return penalty_sum
 
 
-def select_minimum_penalty_element_grid(img_cds, agent_cd):
+def select_minimum_penalty_element_grid(img_cds, agent_cd, use_fast=True):
     """
     img_cds - объект класса Image_circle_diagrams
     agent_cd - объект класса Agent_circle_diagram
+    use_fast - использовать ли быстрый способ подсчёта расстояний
     """
     center_points = []
     penalties = []
     
     for i in range(len(img_cds.center_points)):
         center_point = img_cds.center_points[i]
-        img_cd = img_cds.circle_diagrams[i]
         
-        cur_cd_penalties = []
-        
-        for j in range(len(agent_cd.sectors)):
-            cur_cd_penalties.append(calculate_penalty_for_diagrams(img_cd.sectors, agent_cd.sectors))
-            agent_cd.rotate()
-        penalties.append(min(cur_cd_penalties))
+        if use_fast:
+            penalties.append(img_cds.fast_diagrams[i].dist_to(agent_cd.fast_diagram))
+        else:
+            img_cd = img_cds.circle_diagrams[i]
+            cur_cd_penalties = []
+
+            for j in range(len(agent_cd.sectors)):
+                cur_cd_penalties.append(calculate_penalty_for_diagrams(img_cd.sectors, agent_cd.sectors))
+                agent_cd.rotate()
+            penalties.append(min(cur_cd_penalties))
+            
         center_points.append(center_point)
     
     minimum_penalty = min(penalties)
@@ -271,4 +293,4 @@ def select_minimum_penalty_element_grid(img_cds, agent_cd):
             center_points_minimum_penalty.append(center_points[i])
             indices_minimum_penalty.append(i)
     
-    return center_points_minimum_penalty, indices_minimum_penalty
+    return center_points_minimum_penalty, indices_minimum_penalty, penalties

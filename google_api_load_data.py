@@ -1,18 +1,12 @@
-﻿import numpy as np
+import numpy as np
 import requests
 import cv2
 import math
 
-from utils import calculate_right_top_coordinates
+from utils import DELTA_LAT_PIX, DELTA_LON_PIX, K_LAT, K_LON, DELTA_LON_FIX
+
+from keys import API_KEY
 URL = "https://maps.googleapis.com/maps/api/staticmap?"
-
-DELTA_LAT_PIX = 300
-DELTA_LON_PIX = 400
-
-K_LAT = 730.7543613843219
-K_LON = 728.2110091743106
-
-DELTA_LON_FIX = DELTA_LON_PIX / K_LON
 
 
 def load_and_prepare_image_by_url(url, tmp_filename):
@@ -153,9 +147,8 @@ def find_borders_and_cut_img(img_orig, img_with_markers, img_satellite, is_debug
 
 
 # Полноценная загрузка одной картинки
-def load_prepare_and_cut_image(left_bottom_lat, left_bottom_lon, is_debug=False, return_satellite=True):
-    # TODO: запуск этой функции надо, наверное, отсюда вынести
-    right_top_lat, right_top_lon = calculate_right_top_coordinates(left_bottom_lat, left_bottom_lon)
+def load_prepare_and_cut_image(left_bottom_lat, left_bottom_lon, right_top_lat, right_top_lon, is_debug=False,
+                               return_both=True, return_satellite=True):
     center = [(right_top_lat + left_bottom_lat) / 2, (right_top_lon + left_bottom_lon) / 2]
     
     center_str = ','.join(map(str, center))
@@ -166,6 +159,8 @@ def load_prepare_and_cut_image(left_bottom_lat, left_bottom_lon, is_debug=False,
                                                                  is_debug=is_debug)
     img_cutted, img_cutted_satellite = find_borders_and_cut_img(img_plain, img_with_markers, img_satellite, is_debug=is_debug)
     
+    if return_both:
+        return (img_cutted_satellite, img_cutted)
     if return_satellite:
         return img_cutted_satellite
     return img_cutted

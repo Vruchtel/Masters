@@ -67,27 +67,27 @@ def draw_all_rectangles(img_cutted, bounds, tags, right_top_lat, right_top_lon, 
     
     for i in range(len(tags)):
         if tags[i] == 'wood':
-            print(i, "wood")
+#             print(i, "wood")
             img_new = draw_rectangle_for_element_idx(i, bounds, img_new, [255, 0, 0],
                                                     right_top_lat, right_top_lon, left_bottom_lat, left_bottom_lon,
                                                     one_pixel_lat_diff, one_pixel_lon_diff)
         if tags[i] == 'water':
-            print(i, "water")
+#             print(i, "water")
             img_new = draw_rectangle_for_element_idx(i, bounds, img_new, [0, 0, 255],
                                                     right_top_lat, right_top_lon, left_bottom_lat, left_bottom_lon,
                                                     one_pixel_lat_diff, one_pixel_lon_diff)
         if tags[i] == 'peak':
-            print(i, "peak")
+#             print(i, "peak")
             img_new = draw_rectangle_for_element_idx(i, bounds, img_new, [0, 255, 255],  # желтый
                                                     right_top_lat, right_top_lon, left_bottom_lat, left_bottom_lon,
                                                     one_pixel_lat_diff, one_pixel_lon_diff)
         if tags[i] == 'valley': # долина
-            print(i, "valley")
+#             print(i, "valley")
             img_new = draw_rectangle_for_element_idx(i, bounds, img_new, [128, 0, 255], 
                                                     right_top_lat, right_top_lon, left_bottom_lat, left_bottom_lon,
                                                     one_pixel_lat_diff, one_pixel_lon_diff)
         if tags[i] == 'ridge':  # хребет
-            print(i, "ridge")
+#             print(i, "ridge")
             img_new = draw_rectangle_for_element_idx(i, bounds, img_new, [20, 255, 57],  
                                                     right_top_lat, right_top_lon, left_bottom_lat, left_bottom_lon,
                                                     one_pixel_lat_diff, one_pixel_lon_diff)

@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import pickle
 
 DELTA_LAT_PIX = 300
 DELTA_LON_PIX = 400
@@ -60,3 +61,13 @@ def calculate_distance(point_1, point_2):
     x2, y2 = point_2
 
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+
+def read_pickle(filepath):
+    with open(filepath, 'rb') as f:
+        return pickle.load(f)
+
+
+def dump_pickle(filepath, obj):
+    with open(filepath, 'wb') as f:
+        pickle.dump(obj, f)

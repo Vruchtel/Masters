@@ -9,10 +9,11 @@ import numpy as np
 from diagram import Diagram
 
 class Circle_diagram(object):
-    def __init__(self, sectors_count, center_point, img_shape):
+    def __init__(self, sectors_count, center_point, img_shape, with_angle_penalty=False):
         self.sectors_count = sectors_count
         self.center_point = center_point
         self.img_shape = img_shape
+        self.with_angle_penalty = with_angle_penalty
     
         # Количество градусов, которое помещается в каждом секторе
         self.step_grad = 360 / sectors_count
@@ -45,12 +46,23 @@ class Circle_diagram(object):
         sector_start_idx = int(start_angle / self.step_grad)
         sector_end_idx = int(end_angle / self.step_grad)
         
+        if self.with_angle_penalty:
+            sectors_count = abs(sector_start_idx - sector_end_idx) + 1
+            sector_penalty = 1 / sectors_count
+        
+        
         if diff_between_angles < 180:
-            for sector_idx in range(sector_start_idx, sector_end_idx + 1):    
-                self.sectors[sector_idx].append((distance, osm_object.tag))
+            for sector_idx in range(sector_start_idx, sector_end_idx + 1):
+                if not self.with_angle_penalty:
+                    self.sectors[sector_idx].append((distance, osm_object.tag))
+                else:
+                    self.sectors[sector_idx].append((distance, osm_object.tag, sector_penalty))
         else:
             for sector_idx in list(range(sector_start_idx, self.sectors_count)) + list(range(0, sector_end_idx)):
-                self.sectors[sector_idx].append((distance, osm_object.tag))
+                if not self.with_angle_penalty:
+                    self.sectors[sector_idx].append((distance, osm_object.tag))
+                else:
+                    self.sectors[sector_idx].append((distance, osm_object.tag, sector_penalty))
         
     def resort_sectors(self):
         """
@@ -73,8 +85,8 @@ class Circle_diagram(object):
         self.fast_diagram = Diagram(self.sectors)
         
         
-def create_circle_diagram(sectors_count, center_point, img_osm):
-    cd = Circle_diagram(sectors_count, center_point, img_osm.img_cutted_shape)
+def create_circle_diagram(sectors_count, center_point, img_osm, with_angle_penalty=False):
+    cd = Circle_diagram(sectors_count, center_point, img_osm.img_cutted_shape, with_angle_penalty)
     
     for i in range(len(img_osm.osm_objects)):
         osm_object = img_osm.osm_objects[i]
@@ -148,12 +160,15 @@ def calculate_sectors_count(bigger_side_blocks_count):
 
 
 class Image_circle_diagrams(object):
-    def __init__(self, img_osm, bigger_side_blocks_count, sectors_count, with_fast=True):
+    def __init__(self, img_osm, bigger_side_blocks_count, sectors_count, with_fast=True, with_angle_penalty=False):
         """
         img_osm - структура объектов на изображении (см utils)
         bigger_size_blocks_count - количество элементов сетки на большей стороне изображения
+        with_fast - использовать ли быструю версию построения и сравнения диаграмм
+        with_angle_penalty - учитывать ли видимые угловые размеры объекта при рассчёте штрафа
         """
         self.sectors_count = sectors_count
+        self.with_angle_penalty = with_angle_penalty
         
         # Дальше нужно понять, сколько будет блоков всего на изображении, и где будут находиться центры этих блоков (сетки)
         self.center_points = calculate_blocks_centers(img_osm.img_cutted_shape, bigger_side_blocks_count)
@@ -164,7 +179,7 @@ class Image_circle_diagrams(object):
             self.fast_diagrams = []
             
         for center_p in self.center_points:
-            circle_diagram = create_circle_diagram(self.sectors_count, center_p, img_osm)
+            circle_diagram = create_circle_diagram(self.sectors_count, center_p, img_osm, self.with_angle_penalty)
             self.circle_diagrams.append(circle_diagram)
             
             if with_fast:
@@ -231,6 +246,9 @@ def calculate_penalty_for_sectors(sector_img_diagram, sector_agent_diagram):
         indicator = 0
         if sector_img_diagram[i][1] != sector_agent_diagram[i][1]:
             indicator = 1
+        elif len(sector_img_diagram[i]) == 3 and len(sector_agent_diagram[i]) == 3:
+            indicator = max(sector_img_diagram[i][2], sector_agent_diagram[i][2])  
+            
         penalty += (indicator / (i + 1) ** 2)
     
     more_sector_len = max(len(sector_img_diagram), len(sector_agent_diagram)) - min_length
